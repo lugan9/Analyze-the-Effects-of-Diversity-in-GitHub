@@ -1,4 +1,4 @@
-# MIE1512_Data-Analytics_Class-Final-Project
+# MIE1512_Data-Analytics_Final-Project
 
 ## The Effects of Diversity on Group Productivity and Member Withdrawal in GitHub
 
