@@ -163,3 +163,133 @@ The model in the original paper is Hierarchical Linear Model (HLM) which is an a
 - Are there multiple records for the same thing? If so, does this change the granularity of your dataset or require some amount of deduplication before analysis?
 
   Multiple records can be likely to give more additional details or information about a same thing. For example, a user can be member of multiple projects and has many event records in different projects; several commit_comments may lead to a same commit. But in all datasets, each smallest unit objects like a commit_comment will have a unique id so I do not use some amount of deduplication.
+
+### IV. Data Preparation
+
+The most important work in this first week is select related datasets and prepare effective data for accurate analysis.Based on previous section, the data source of my project is the GHTorrent datasets on Google Bigquery. Bigquery stores similar GHTorrent datasets dumped on different dates. I use the data in ght_2017_05_01.
+
+#### A. Data Selection
+
+The following related datasets and attributes from the GHTorrent schema will be needed in this project.
+
+- projects: id, created_at
+
+- users: id, country_code
+
+- project_members: user_id, repo_id, created_at
+
+- commits: id, committer_id, project_id, created_at
+
+- commit_comments: id, commit_id, user_id, created_at
+
+- pull_requests: id, base_repo_id, pullreq_id
+
+- pull_request_history: id, created_at, actor_id, pull_request_id
+
+- issues: id, issue_id, repo_id
+
+- issue_events: issue_id, actor_id, event_id, created_at
+
+- issue_comments: issue_id, comment_id, user_id, created_at
+
+#### B. Data Filter
+
+Because of large size of initial datastes and convenient query and storage environment on Google Cloud Platform, I filter the selected initial data in Bigquery. Then save the results in new tables. I also create a project in mu account on Google Cloud Platform. Use pandas functions to read tables from Bigquery to Jupyter notebook. This part shows filter results and queries are in the comments.
+
+Firstly, list filter conditions in preprosessing stage:
+
+- Choose projects which were created before 2016-11-01.<br>
+
+  Our data is dumped on 2017-05-01. Since the project group diversity will change as time goes on, we set a 90-day long period as a quarter and measure the diversity and memberwithdrawal in each quarter. So, we require projects which have at least 2 quarters (6 months).
+  
+  
+- Choose projects whose memberCount >= 3.<br>
+
+  The project topic is about group diversity. We define at least 3 members can compose a group.
+  
+   
+- Choose groups in which at least 75% members have non-empty country_code.<br>
+
+  Based on the reference, the country diversity is effective when we can get at least 75% members' country_code.
+  
+
+- Consider project events in recent one year (after 2016-05-01).<br>
+  
+  
+- Filter inactive projects whose commitCount < 10.<br>
+  
+  Based on the reference, if the number of commits made by members is less than 10 or the total number of events is less than 100, the project is inactive. The filer condition about the total events will be implemented in later part.
+  
+##### a. Choose projects which were created before 2016-11-01.
+
+``` sql
+SELECT id, created_at
+FROM [ghtorrent-bq:ght_2017_05_01.projects]
+HAVING YEAR(created_at) < 2016 OR (YEAR(created_at) = 2016 AND MONTH(created_at) < 11)
+ORDER BY created_at
+```
+##### b. Choose projects whose memberCount >= 3.
+
+``` sql
+--(1) Select all users who are project members and their countryCode and countryState (if the country_code is non-empty).
+
+SELECT m.repo_id as projectId, u.id as memberId, u.country_code as countryCode,
+  (CASE when u.country_code is null then 0
+        when u.country_code is not null then 1
+    END) as countryState
+FROM [ghtorrent-bq:ght_2017_05_01.users] as u
+INNER JOIN
+(
+  SELECT *
+  FROM [ghtorrent-bq:ght_2017_05_01.project_members]
+) as m
+ON u.id = m.user_id
+
+--(2) Combine the results in a and b(1) based on projectId to get members information in projects which are created before 2016-11-01 (table members1)
+
+SELECT a.projectId as projectId, a.memberId as memberId, a.countryCode as countryCode, a.countryState as countryState
+FROM
+(
+  SELECT m.repo_id as projectId, u.id as memberId, u.country_code as countryCode,
+        (CASE when u.country_code is null then 0
+              when u.country_code is not null then 1
+         END) as countryState
+  FROM [ghtorrent-bq:ght_2017_05_01.users] as u
+  INNER JOIN
+  (
+    SELECT *
+    FROM [ghtorrent-bq:ght_2017_05_01.project_members]
+  ) as m
+  ON u.id = m.user_id
+) as a
+INNER JOIN
+(
+  SELECT p.id as projectId
+  FROM 
+  (SELECT id, created_at
+  FROM [ghtorrent-bq:ght_2017_05_01.projects]
+  HAVING YEAR(created_at) < 2016 OR (YEAR(created_at) = 2016 AND MONTH(created_at) < 11)
+  ) as p
+) b
+ON b.projectId = a.projectId
+
+--(3) Count the number of members in each project and choose projects whose memberCount >= 3 (table projects1)
+--Note: New tables are stored in a project in my google account. The project id is 'advance-topic-197921'.
+
+SELECT projectId, count(memberId) as memberCount
+FROM [advance-topic-197921:members.members1]
+GROUP BY projectId
+HAVING memberCount >= 3
+
+--(4) Members in projects whose memberCount >= 3 (table members2)
+
+SELECT m1.projectId as projectId, m1.memberId as memberId, m1.countryCode as countryCode, m1.countryState as countryState
+FROM [advance-topic-197921:members.members1] as m1
+INNER JOIN
+(
+  SELECT projectId
+  FROM [advance-topic-197921:projects.projects1]
+) as p1
+ON p1.projectId = m1.projectId
+ORDER BY m1.projectId
+```
