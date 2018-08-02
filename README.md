@@ -661,3 +661,959 @@ FROM members6
 ORDER BY projectId
 LIMIT 10
 ```
+#### d. Combine the members6 with commits2 and add quarterIndex to get final commits table (commits4, 124602 rows).
+
+```sql
+// SELECT c.projectId as projectId, m6.projectCreatedAt as projectCreatedAt, c.committerId as memberId, 
+//       c.commitId as commitId, c.createdAt as commitCreatedAt
+// FROM [advance-topic-197921:commits.commits2] as c
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, projectCreatedAt
+//   FROM [advance-topic-197921:members.members6]
+// ) as m6
+// ON m6.projectId = c.projectId AND m6.memberId = c.committerId
+```
+```sql
+--Add quarterIndex
+//
+// SELECT projectId, projectCreatedAt, memberId, commitId as eventId, commitCreatedAt as eventCreatedAt,
+//       FLOOR(DATEDIFF(commitCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+// FROM [advance-topic-197921:commits.commits3]
+```
+```sql
+// df = pd.read_gbq('select * from commits.commits4', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('commits4.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val commits4DataURL = "https://drive.google.com/uc?export=download&id=1_yTzzMH8unq0uzs9bnNsIA9yfptDGNjN"
+val commits4RDD = sc.parallelize(IOUtils.toString(new URL(commits4DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+commits4RDD.first
+```
+```spark
+// Commits4 class
+case class Commits4(                            // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getCommits4Cleaned(row:Array[String]):Commits4 = {
+  return Commits4(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val commits4 = commits4RDD.map(r => getCommits4Cleaned(r)).toDF()
+
+// register this data as an SQL table
+commits4.createOrReplaceTempView("commits4")
+```
+```sql
+SELECT *
+FROM commits4
+LIMIT 10
+```
+#### e. Combine the members6 with commit_comments1 and add quarterIndex to get final new commit_comments table (commit_comments3, 2967 rows).
+
+```sql
+// SELECT  cc. projectId as projectId, m6.projectCreatedAt as projectCreatedAt, cc. memberId as memberId, 
+//         cc. commitCommentId as commitCommentId, cc. createdAt as commitCommentCreatedAt
+// FROM [advance-topic-197921:commit_comments.commit_comments1] as cc
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, projectCreatedAt
+//   FROM [advance-topic-197921:members.members6]
+// ) as m6
+// ON m6.projectId = cc.projectId AND m6.memberId = cc.memberId
+```
+```sql
+// SELECT projectId, projectCreatedAt, memberId, commitCommentId as eventId, commitCommentCreatedAt as eventCreatedAt,
+//       FLOOR(DATEDIFF(commitCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+// FROM [advance-topic-197921:commit_comments.commit_comments2]
+```
+```python
+// df = pd.read_gbq('select * from commit_comments.commit_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('commit_comments3.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val commit_comments3DataURL = "https://drive.google.com/uc?export=download&id=1NSj3kLoVgvUXFQl3pTLgkPit0vHbmbkz"
+val commit_comments3RDD = sc.parallelize(IOUtils.toString(new URL(commit_comments3DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+commit_comments3RDD.first
+```
+```spark
+// Commit_comments3 class
+case class Commit_comments3(                    // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getCommit_comments3Cleaned(row:Array[String]):Commit_comments3 = {
+  return Commit_comments3(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val commit_comments3 = commit_comments3RDD.map(r => getCommit_comments3Cleaned(r)).toDF()
+// register this data as an SQL table
+commit_comments3.createOrReplaceTempView("commit_comments3")
+```
+```sql
+SELECT *
+FROM commit_comments3
+LIMIT 10
+```
+#### f. Combine the members6 with issues1 and add quarterIndex to get final new issues table (issues3, 138931 rows).
+
+```sql
+// SELECT i.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, i.actorId as memberId,
+//       i.issueId as issueId, i.issueEventId as issueEventId, i.createdAt as issueEventCreatedAt
+// FROM [advance-topic-197921:issues.issues1] as i
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, projectCreatedAt
+//   FROM [advance-topic-197921:members.members6]
+// ) as m6
+// ON m6.projectId = i.repoId AND m6.memberId = i.actorId
+```
+```sql
+// SELECT projectId, projectCreatedAt, memberId, issueEventId as eventId, issueEventCreatedAt as eventCreatedAt,
+//       FLOOR(DATEDIFF(issueEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+// FROM [advance-topic-197921:issues.issues2]
+```
+```python
+// df = pd.read_gbq('select * from issues.issues3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('issues3.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val issues3DataURL = "https://drive.google.com/uc?export=download&id=1XVfLV57Vnb96MrdoIDR5CeBuptGtYG7k"
+val issues3RDD = sc.parallelize(IOUtils.toString(new URL(issues3DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+issues3RDD.first
+```
+```spark
+// Issues3 class
+case class Issues3(                             // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getIssues3Cleaned(row:Array[String]):Issues3 = {
+  return Issues3(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val issues3 = issues3RDD.map(r => getIssues3Cleaned(r)).toDF()
+// register this data as an SQL table
+issues3.createOrReplaceTempView("issues3")
+```
+```sql
+SELECT *
+FROM issues3
+ORDER BY projectId
+```
+#### g. Combine the members6 with issue_comments1 and add quarterIndex to get final issue_comments table (issue_comments3, 164356 rows).
+
+```sql
+// SELECT ic.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, ic.userId as memberId,
+//       ic.issueId as issueId, ic.issueCommentId as issueCommentId, ic.issueCommentCreatedAt as issueCommentCreatedAt
+// FROM [advance-topic-197921:issue_comments.issue_comments1] as ic
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, projectCreatedAt
+//   FROM [advance-topic-197921:members.members6]
+// ) as m6
+// ON m6.projectId = ic.repoId AND m6.memberId = ic.userId
+```
+```sql
+// SELECT projectId, projectCreatedAt, memberId, issueCommentId as eventId, issueCommentCreatedAt as eventCreatedAt,
+//       FLOOR(DATEDIFF(issueCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+// FROM [advance-topic-197921:issue_comments.issue_comments2]
+```
+```python
+// df = pd.read_gbq('select * from issue_comments.issue_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('issue_comments3.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val issue_comments3DataURL = "https://drive.google.com/uc?export=download&id=1b50pPonVv7mS-CpjJMW4qgDg_DLejh5y"
+val issue_comments3RDD = sc.parallelize(IOUtils.toString(new URL(issue_comments3DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+issue_comments3RDD.first
+```
+```spark
+// Issue_comments3 class
+case class Issue_comments3(                     // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getIssue_comments3Cleaned(row:Array[String]):Issue_comments3 = {
+  return Issue_comments3(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val issue_comments3 = issue_comments3RDD.map(r => getIssue_comments3Cleaned(r)).toDF()
+// register this data as an SQL table
+issue_comments3.createOrReplaceTempView("issue_comments3")
+```
+```sql
+SELECT *
+FROM issue_comments3
+ORDER BY projectId
+LIMIT 10
+```
+#### h. Combine the members6 with pull_requests1 and add quarterIndex to get final pull_requests table (pull_requests3, 87036 rows).
+
+```sql
+// SELECT  pr.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, pr.eventActorId as memberId,
+//         pr.pullRequestId as pullRequestId, pr.pullRequestEventId as pullRequestEventId, pr.eventCreatedAt as pullreqEventCreatedAt
+// FROM [advance-topic-197921:pull_requests.pull_requests1] as pr
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, projectCreatedAt
+//   FROM [advance-topic-197921:members.members6]
+// ) as m6
+// ON m6.projectId = pr.repoId AND m6.memberId = pr.eventActorId
+```
+```sql
+// SELECT projectId, projectCreatedAt, memberId, pullRequestEventId as eventId, pullreqEventCreatedAt as eventCreatedAt,
+//       FLOOR(DATEDIFF(pullreqEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+// FROM [advance-topic-197921:pull_requests.pull_requests2]
+```
+```python
+// df = pd.read_gbq('select * from pull_requests.pull_requests3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('pull_requests3.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val pull_requests3DataURL = "https://drive.google.com/uc?export=download&id=1ruMygaMy2myp5FIB7Yzg2_CpbzwVOpI_"
+val pull_requests3RDD = sc.parallelize(IOUtils.toString(new URL(pull_requests3DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+pull_requests3RDD.firstpull_requests3RDD.first
+```
+```spark
+// Pull_requests3 class
+case class Pull_requests3(                      // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getPull_requests3Cleaned(row:Array[String]):Pull_requests3 = {
+  return Pull_requests3(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val pull_requests3 = pull_requests3RDD.map(r => getPull_requests3Cleaned(r)).toDF()
+// register this data as an SQL table
+pull_requests3.createOrReplaceTempView("pull_requests3")
+```
+```sql
+SELECT *
+FROM pull_requests3
+ORDER BY projectId
+LIMIT 10
+```
+#### i. Combine all event tables (project_events2, 517892 rows).
+
+We have union the column names of all kinds of event table. So we can combine them all in a large table for calculating independent and response variables in the project.
+
+```sql
+// SELECT projectId, projectCreatedAt, memberId, eventId, eventCreatedId, quarterIndex
+// FROM [advance-topic-197921:commits.commits4],
+//      [advance-topic-197921:commit_comments.commit_comments3],
+//      [advance-topic-197921:issues.issues3],
+//      [advance-topic-197921:issue_comments.issue_comments3],
+//      [advance-topic-197921:pull_requests.pull_requests3]
+```
+```python
+// df = pd.read_gbq('select * from project_events.project_events2', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('project_events2.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val project_events2DataURL = "https://drive.google.com/uc?export=download&id=1HhGWOTlP4PC8wOKGvEJ2e-lWpH1EN8jT"
+val project_events2RDD = sc.parallelize(IOUtils.toString(new URL(project_events2DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+project_events2RDD.first
+```
+```spark
+// Project_events2 class
+case class Project_events2(                     // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    memberId: Int,                              // 2  
+    eventId: Int,                               // 3
+    eventCreatedAt: java.sql.Timestamp,         // 4
+    quarterIndex: Double                        // 5 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getProject_events2Cleaned(row:Array[String]):Project_events2 = {
+  return Project_events2(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toIntOrElse(),
+    row(3).toIntOrElse(),
+    row(4).toDateOrElse(),
+    row(5).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val project_events2 = project_events2RDD.map(r => getProject_events2Cleaned(r)).toDF()
+// register this data as an SQL table
+project_events2.createOrReplaceTempView("project_events2")
+```
+```sql
+SELECT *
+FROM project_events2
+LIMIT 10
+```
+### E. Format Data
+
+Based on definitions of country diversity, tenure diversity, project productivity and withdrawal, in this part, we show how to calculate dependent and independent parameters with prepared data. Then also import them to spark and build dataframes.
+
+#### a. Country Diversity (countryDiversity, 394 rows)
+
+```sql
+// (1) Calculate memberCount of each country
+//
+// SELECT projectId, COUNT(memberId) as memberCount, countryCode
+// FROM [advance-topic-197921:members.members6]
+// GROUP BY projectId, countryCode
+// HAVING countryCode IS NOT NULL
+// ORDER BY projectId
+
+// (2) Calculate the percent of members in each country.
+//
+// SELECT mc.projectId as projectId, memberCount/m6.memberSum as countryPercent, countryCode
+// FROM [advance-topic-197921:country_diversity.memberCount_country] as mc
+// INNER JOIN
+// (
+//   SELECT projectId, COUNT(memberId) as memberSum
+//   FROM [advance-topic-197921:members.members6]
+//   GROUP BY projectId
+// ) as m6
+// ON m6.projectId = mc.projectId
+// ORDER BY mc.projectId
+
+// (3) Calculate country diversity
+//
+// SELECT projectId, round(1 - SUM(countryPercent*countryPercent), 3) as countryDiversity
+// FROM [advance-topic-197921:country_diversity.countryPercent]
+// GROUP BY projectId
+```
+```python
+// df = pd.read_gbq('select * from country_diversity.countryDiversity', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('countryDiversity.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val countryDiversityDataURL = "https://drive.google.com/uc?export=download&id=1AtaoE7plUr5rL0YsSsdCUWuMobiBLpP1"
+val countryDiversityRDD = sc.parallelize(IOUtils.toString(new URL(countryDiversityDataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+countryDiversityRDD.first
+```
+```spark
+// CountryDiversity class
+case class CountryDiversity(                    // column index
+    projectId: Int,                             // 0
+    countryDiversity: Double                    // 1 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getCountryDiversityCleaned(row:Array[String]):CountryDiversity = {
+  return CountryDiversity(
+    row(0).toIntOrElse(),
+    row(1).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val countryDiversity = countryDiversityRDD.map(r => getCountryDiversityCleaned(r)).toDF()
+// register this data as an SQL table
+countryDiversity.createOrReplaceTempView("countryDiversity")
+```
+```sql
+SELECT *
+FROM countryDiversity
+ORDER BY projectId
+LIMIT 10
+```
+#### b. Productivity (productivity1 1673 rows)
+
+```sql
+// SELECT projectId, quarterIndex, COUNT(eventId) as eventNumInQuarter
+// FROM [advance-topic-197921:project_events.project_events2]
+// GROUP BY projectId, quarterIndex
+// HAVING quarterIndex > 0
+// ORDER BY projectId, quarterIndex
+```
+```python
+// df = pd.read_gbq('select * from productivity.productivity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('productivity1.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val productivity1DataURL = "https://drive.google.com/uc?export=download&id=1-XnGTKc7KAHf2Di7jJkn3mRgjE7FOrOf"
+val productivity1RDD = sc.parallelize(IOUtils.toString(new URL(productivity1DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+productivity1RDD.first
+```
+```spark
+// Productivity1 class
+case class Productivity1(                       // column index
+    projectId: Int,                             // 0
+    quarterIndex: Double,                       // 1 
+    eventNumInQuarter: Int                      // 2
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getProductivity1Cleaned(row:Array[String]):Productivity1 = {
+  return Productivity1(
+    row(0).toIntOrElse(),
+    row(1).toDoubleOrElse(),
+    row(2).toIntOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val productivity1 = productivity1RDD.map(r => getProductivity1Cleaned(r)).toDF()
+// register this data as an SQL table
+productivity1.createOrReplaceTempView("productivity1")
+```
+```sql
+SELECT *
+FROM productivity1
+LIMIT 10
+```
+#### c. Project Withdrawal (withdrawal1, 1269 rows)
+
+```sql
+// (1) The number of members who have activities in each quarter
+
+// SELECT projectId, quarterIndex, COUNT(DISTINCT(memberId)) as memberNumInQuarter
+// FROM [advance-topic-197921:project_events.project_events2]
+// GROUP BY projectId, quarterIndex
+// ORDER BY projectId, quarterIndex
+
+// (2) Calculate withdrawal
+//
+// SELECT q.projectId as projectId, q.quarterIndex + 1 as quarterIndex, (q1.memberNumInQuarter - q.memberNumInQuarter) as withdrawal
+// FROM [advance-topic-197921:withdrawal.memberNumInQuarter] as q
+// INNER JOIN
+// (
+//   SELECT projectId, (quarterIndex -1) as quarterIndex, memberNumInQuarter
+//   FROM [advance-topic-197921:withdrawal.memberNumInQuarter]
+//   having quarterIndex > 0
+// ) as q1
+// ON q.projectId = q1.projectId AND q.quarterIndex = q1.quarterIndex
+// ORDER BY q.projectId, q.quarterIndex
+```
+```python
+// df = pd.read_gbq('select * from withdrawal.withdrawal1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('withdrawal1.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val withdrawal1DataURL = "https://drive.google.com/uc?export=download&id=1Wyp0TVFdfRH7F5B19Qg71MYmrX0EGvkQ"
+val withdrawal1RDD = sc.parallelize(IOUtils.toString(new URL(withdrawal1DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+withdrawal1RDD.first
+```
+```spark
+// Withdrawal1 class
+case class Withdrawal1(                         // column index
+    projectId: Int,                             // 0
+    quarterIndex: Double,                       // 1 
+    withdrawal: Int                             // 2
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getWithdrawal1Cleaned(row:Array[String]):Withdrawal1 = {
+  return Withdrawal1(
+    row(0).toIntOrElse(),
+    row(1).toDoubleOrElse(),
+    row(2).toIntOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val withdrawal1 = withdrawal1RDD.map(r => getWithdrawal1Cleaned(r)).toDF()
+// register this data as an SQL table
+withdrawal1.createOrReplaceTempView("withdrawal1")
+```
+```sql
+SELECT *
+FROM withdrawal1
+LIMIT 30
+```
+#### d. Tenure Diversity (tenure_diversity1, 681 rows).
+
+```sql
+// (1) The first event of each member in each quarter.
+// 
+// SELECT e.projectId as projectId, e.projectCreatedAt as projectCreatedAt, e.memberId as memberId, 
+//       e.eventId as eventId, e.eventCreatedAt as memberFirstEvent, e.quarterIndex as quarterIndex
+// FROM [advance-topic-197921:project_events.project_events2] as e
+// INNER JOIN
+// (
+//   SELECT projectId, memberId, min(eventCreatedAt) as memberFirstEvent
+//   FROM [advance-topic-197921:project_events.project_events2]
+//   GROUP BY projectId, memberId
+// ) as e2
+// ON e.projectId = e2.projectId AND e.memberId = e2.memberId AND e2.memberFirstEvent = e.eventCreatedAt
+// HAVING quarterIndex > 0
+// ORDER BY projectId, memberId
+
+// (2) Calculate member tenure
+//
+// SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId,
+//       DATEDIFF(DATE_ADD(projectCreatedAt, 90*quarterIndex, 'DAY'), memberFirstEvent) as tenure
+// FROM [advance-topic-197921:tenure_diversity.memberFirstEvent]
+// ORDER BY projectId, memberId
+
+// (3) Calculate tenure diversity
+//
+// SELECT projectId, projectCreatedAt, quarterIndex, 
+//       ROUND(SQRT(SUM((tenure - meanTure)*(tenure - meanTure))/COUNT(memberId)), 1) as tenureDiversity
+// FROM
+// (
+// SELECT t.projectId as projectId, t.projectCreatedAt as projectCreatedAt, t.memberId as memberId,
+//       t.quarterIndex as quarterIndex, t.memberFirstEvent as memberFirstEvent, t.eventId as eventId,
+//       t.tenure as tenure, mt.meanTenure as meanTure
+// FROM
+// (
+// SELECT projectId, projectCreatedAt, quarterIndex, AVG(tenure) as meanTenure
+// FROM [advance-topic-197921:tenure_diversity.memberTenure]
+// GROUP BY projectId, projectCreatedAt, quarterIndex
+// ORDER BY projectId
+// ) as mt
+// INNER JOIN
+// (
+//   SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId, tenure
+//   FROM [advance-topic-197921:tenure_diversity.memberTenure]
+// ) as t
+// ON t.projectId = mt.projectId AND t.quarterIndex = mt.quarterIndex
+// )
+// GROUP BY projectId, projectCreatedAt, quarterIndex
+// ORDER BY projectId, quarterIndex
+```
+```python
+// df = pd.read_gbq('select * from tenure_diversity.tenure_diversity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+//                 private_key='', dialect='legacy')
+// df.to_csv('tenure_diversity1.csv', index = False, encoding = 'utf-8')
+```
+```spark
+val tenure_diversity1DataURL = "https://drive.google.com/uc?export=download&id=1GlL90mKDM2UI_UudRn2WUhKJez8N7eKR"
+val tenure_diversity1RDD = sc.parallelize(IOUtils.toString(new URL(tenure_diversity1DataURL),Charset.forName("utf8")).split("\n")).
+                                map(line => line.split(",", -1).map(_.trim)).filter(line => line(0) != "projectId")
+```
+```spark
+tenure_diversity1RDD.first
+```
+```spark
+// Tenure_diversity1 class
+case class Tenure_diversity1(                            // column index
+    projectId: Int,                             // 0
+    projectCreatedAt: java.sql.Timestamp,       // 1
+    quarterIndex: Double,                       // 2 
+    tenureDiversity: Double                     // 3 
+  
+)
+
+implicit class StringConversion(val s: String) {
+def toTypeOrElse[T](convert: String=>T, defaultVal: T) = try {
+    convert(s)
+  } catch {
+    case _: Throwable => defaultVal
+  }
+  
+  def toIntOrElse(defaultVal: Int = 0) = toTypeOrElse[Int](_.toInt, defaultVal)
+  def toDoubleOrElse(defaultVal: Double = 0D) = toTypeOrElse[Double](_.toDouble, defaultVal)
+  def toDateOrElse(defaultVal: java.sql.Timestamp = java.sql.Timestamp.valueOf("1970-01-01 00:00:00")) = toTypeOrElse[java.sql.Timestamp](java.sql.Timestamp.valueOf(_), defaultVal)
+}
+
+def getTenure_diversity1Cleaned(row:Array[String]):Tenure_diversity1 = {
+  return Tenure_diversity1(
+    row(0).toIntOrElse(),
+    row(1).toDateOrElse(),
+    row(2).toDoubleOrElse(),
+    row(3).toDoubleOrElse()
+  )
+}
+```
+```spark
+// load the data into a DataFrame used for SparkSQL
+val tenure_diversity1 = tenure_diversity1RDD.map(r => getTenure_diversity1Cleaned(r)).toDF()
+// register this data as an SQL table
+tenure_diversity1.createOrReplaceTempView("tenure_diversity1")
+```
+```sql
+SELECT *
+FROM tenure_diversity1
+LIMIT 10
+```
+Up to now, we have completed the data preparation and get dataframes of the four independent and response variables in the project (tenureDiversity, countryDiversity, productivity, withdrawal). In next section, we can build models to analyze the relations among them.
+
+## V. Build Model
+
+### A. Controlled variables (project size and quarter index)
+
+Based on the first paper I refer to, we need to consider some controlled variables that have potential influnce on the response variables. In this project, we consider project size and quarter index as controlled variables. The quarter index has been listed within data frames of response cariables in the last section. Now we add project size. According to the literature, project size is defined as the number of members in a project.
+
+```sql
+SELECT projectId, COUNT(DISTINCT memberId) as projectSize
+FROM project_events2
+GROUP BY projectId
+```
+```spark
+val projectsizeDF = sqlContext.sql("SELECT projectId, COUNT(DISTINCT memberId) as projectSize FROM project_events2 GROUP BY projectId")
+projectsizeDF.createOrReplaceTempView("project_size")
+```
+### B. Relationship between country diversity and productivity
+
+Combine dataframes countryDiversity, productivity1 and project_size.
+
+```sql
+SELECT cd.countryDiversity as countryDiversity, cd.countryDiversity*cd.countryDiversity as countryDiversitySquared, 
+       e.quarterIndex as quarterIndex, s.projectSize as projectSize, e.eventNumInQuarter as eventNumInQuarter
+FROM
+(
+    SELECT projectId, quarterIndex, eventNumInQuarter
+    FROM productivity1
+) as e
+INNER JOIN
+(
+    SELECT projectId, countryDiversity
+    FROM countryDiversity
+) as cd
+INNER JOIN
+(
+    SELECT projectId, projectSize
+    FROM project_size
+) as s
+ON cd.projectId = e.projectId AND cd.projectId = s.projectId
+```
+```spark
+// Build a dataframe for the combined result.
+val relation1DF = sqlContext.sql("SELECT cd.countryDiversity as countryDiversity, cd.countryDiversity*cd.countryDiversity as countryDiversitySquared, e.quarterIndex as quarterIndex, s.projectSize as projectSize, e.eventNumInQuarter as eventNumInQuarter FROM (SELECT projectId, quarterIndex, eventNumInQuarter FROM productivity1) as e INNER JOIN (SELECT projectId, countryDiversity FROM countryDiversity) as cd INNER JOIN (SELECT projectId, projectSize FROM project_size) as s ON cd.projectId = e.projectId AND cd.projectId = s.projectId")
+```
+```spark
+relation1DF.take(10)
+```
+```spark
+import org.apache.spark.ml.regression.GeneralizedLinearRegression
+import org.apache.spark.ml.feature.VectorAssembler
+import org.apache.spark.ml.linalg.Vectors
+```
+```spark
+//Create features column
+
+val assembler1 = new VectorAssembler().setInputCols(Array("countryDiversity","countryDiversitySquared","quarterIndex","projectSize")).setOutputCol("features")
+val relation1 = assembler1.transform(relation1DF).select("features","eventNumInQuarter")
+```
+```spark
+// Build generalize linear model
+
+val glr1 = new GeneralizedLinearRegression()  
+  .setFamily("poisson")  
+  .setLink("identity")
+  .setMaxIter(10)
+  .setRegParam(0.3)
+  .setFeaturesCol("features")   // setting features column
+  .setLabelCol("eventNumInQuarter")      // setting label column 
+```
+```spark
+// Fit the model to dataset
+
+val model1 = glr1.fit(relation1)
+```
+```spark
+// Print the coefficients and intercept for generalized linear regression model  
+
+println(s"Coefficients: ${model1.coefficients}")
+println(s"Intercept: ${model1.intercept}") 
+```
+```spark
+// Summarize the model and print the indices
+
+val summary = model1.summary
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"T Values: ${summary.tValues.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")
+println(s"Dispersion: ${summary.dispersion}")
+println(s"Null Deviance: ${summary.nullDeviance}")
+println(s"Residual Degree Of Freedom Null: ${summary.residualDegreeOfFreedomNull}")
+println(s"Deviance: ${summary.deviance}")
+println(s"Residual Degree Of Freedom: ${summary.residualDegreeOfFreedom}")
+println(s"AIC: ${summary.aic}")
+println("Deviance Residuals: ")
+summary.residuals().show()
+```
+### C. Relationship between country diversity and withdrawal
+
+Combine dataframes countryDiversity, withdrawal1 and project_size.
+
+```sql
+SELECT cd.countryDiversity as countryDiversity, cd.countryDiversity*cd.countryDiversity as countryDiversitySquared,
+       w.quarterIndex as quarterIndex, s.projectSize as projectSize, ABS(w.withdrawal) as withdrawal
+FROM
+(
+    SELECT projectId, quarterIndex, withdrawal
+    FROM withdrawal1
+) as w
+INNER JOIN
+(
+    SELECT projectId, countryDiversity
+    FROM countryDiversity
+) as cd
+INNER JOIN
+(
+    SELECT projectId, projectSize
+    FROM project_size
+) as s
+ON cd.projectId = w.projectId AND cd.projectId = s.projectId
+```
+```spark
+val relation2DF = sqlContext.sql("SELECT cd.countryDiversity as countryDiversity, cd.countryDiversity*cd.countryDiversity as countryDiversitySquared, w.quarterIndex as quarterIndex, s.projectSize as projectSize, ABS(w.withdrawal) as withdrawal FROM (SELECT projectId, quarterIndex, withdrawal FROM withdrawal1) as w INNER JOIN (SELECT projectId, countryDiversity FROM countryDiversity) as cd INNER JOIN (SELECT projectId, projectSize FROM project_size) as s ON cd.projectId = w.projectId AND cd.projectId = s.projectId")
+```
+```spark
+relation2DF.take(10)
+```
+```spark
+//Creating features column
+val assembler2 = new VectorAssembler().setInputCols(Array("countryDiversity","countryDiversitySquared","quarterIndex","projectSize")).setOutputCol("features")
+val relation2 = assembler2.transform(relation2DF).select("features","withdrawal")
+```
+```spark
+// Build generalize linear model
+val glr2 = new GeneralizedLinearRegression()  
+  .setFamily("gaussian")  
+  .setLink("identity")
+  .setMaxIter(3)
+  .setFeaturesCol("features")   // setting features column
+  .setLabelCol("withdrawal")      // setting label column 
+```
+```spark
+// Fit the model to dataset
+val model2 = glr2.fit(relation2)
+```
+```spark
+// Print the coefficients and intercept for generalized linear regression model 
+println(s"Coefficients: ${model2.coefficients}")
+println(s"Intercept: ${model2.intercept}")
+```
+```spark
+// Summarize the model and print the indices
+val summary = model2.summary
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"T Values: ${summary.tValues.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")
+println(s"Dispersion: ${summary.dispersion}")
+println(s"Null Deviance: ${summary.nullDeviance}")
+println(s"Residual Degree Of Freedom Null: ${summary.residualDegreeOfFreedomNull}")
+println(s"Deviance: ${summary.deviance}")
+println(s"Residual Degree Of Freedom: ${summary.residualDegreeOfFreedom}")
+println(s"AIC: ${summary.aic}")
+println("Deviance Residuals: ")
+summary.residuals().show()
+```
