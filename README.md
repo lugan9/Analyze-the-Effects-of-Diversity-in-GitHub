@@ -1617,3 +1617,247 @@ println(s"AIC: ${summary.aic}")
 println("Deviance Residuals: ")
 summary.residuals().show()
 ```
+### D. Relationship between tenure diversity and productivity
+
+Combine dataframes tenure_diversity1, productivity1 and project_size.
+
+```sql
+SELECT td.quarterIndex as quarterIndex, s.projectSize as projectSize, td.tenureDiversity as tenureDiversity, td.tenureDiversity*td.tenureDiversity as tenureDiversitySquared, p.eventNumInQuarter as eventNumInQuarter
+FROM
+(
+    SELECT projectId, quarterIndex, eventNumInQuarter
+    FROM productivity1
+) as p
+INNER JOIN
+(
+    SELECT projectId, quarterIndex, tenureDiversity
+    FROM tenure_diversity1
+) as td
+INNER JOIN 
+(
+    SELECT projectId, projectSize 
+    FROM project_size
+) as s 
+ON td.projectId = p.projectId AND td.quarterIndex = p.quarterIndex AND td.projectId = s.projectId
+```
+```spark
+val relation3DF = sqlContext.sql("SELECT td.quarterIndex as quarterIndex, s.projectSize as projectSize, td.tenureDiversity as tenureDiversity, td.tenureDiversity*td.tenureDiversity as tenureDiversitySquared, p.eventNumInQuarter as eventNumInQuarter FROM (SELECT projectId, quarterIndex, eventNumInQuarter FROM productivity1) as p INNER JOIN (SELECT projectId, quarterIndex, tenureDiversity FROM tenure_diversity1) as td INNER JOIN (SELECT projectId, projectSize FROM project_size) as s ON td.projectId = p.projectId AND td.quarterIndex = p.quarterIndex AND td.projectId = s.projectId")
+```
+```spark
+relation3DF.take(10)
+```
+```spark
+//Creating features column
+
+val assembler3 = new VectorAssembler().setInputCols(Array("quarterIndex","tenureDiversity","projectSize","tenureDiversitySquared")).setOutputCol("features")
+val relation3 = assembler3.transform(relation3DF).select("features","eventNumInQuarter")
+```
+```spark
+// Build generalize linear model
+val glr3 = new GeneralizedLinearRegression()  
+  .setFamily("gaussian")  
+  .setLink("identity")
+  .setMaxIter(3)
+  .setFeaturesCol("features")   // setting featuresn.setRegParam(5)
+  .setLabelCol("eventNumInQuarter")      // setting label column 
+```
+```spark
+// Fit the model to dataset
+val model3 = glr3.fit(relation3)
+```
+```spark
+// Print the coefficients and intercept for generalized linear regression model 
+println(s"Coefficients: ${model3.coefficients}") 
+println(s"Intercept: ${model3.intercept}") 
+```
+```spark
+// Summarize the model and print the indices
+val summary = model3.summary
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"T Values: ${summary.tValues.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")
+println(s"Dispersion: ${summary.dispersion}")
+println(s"Null Deviance: ${summary.nullDeviance}")
+println(s"Residual Degree Of Freedom Null: ${summary.residualDegreeOfFreedomNull}")
+println(s"Deviance: ${summary.deviance}")
+println(s"Residual Degree Of Freedom: ${summary.residualDegreeOfFreedom}")
+println(s"AIC: ${summary.aic}")
+println("Deviance Residuals: ")
+summary.residuals().show()
+```
+### E. Relationship between tenure diversity and withdrawal
+
+Combine dataframes tenure_diversity1, withdrawal1 and project_size.
+
+```sql
+SELECT td.tenureDiversity as tenureDiversity, td.tenureDiversity*td.tenureDiversity as tenureDiversitySquared, td.quarterIndex as quarterIndex, 
+       s.projectSize as projectSize, ABS(w.withdrawal) as withdrawal 
+FROM
+(
+SELECT projectId, quarterIndex, withdrawal 
+FROM withdrawal1) as w
+INNER JOIN 
+(
+SELECT projectId, quarterIndex, tenureDiversity 
+FROM tenure_diversity1
+) as td 
+INNER JOIN 
+(
+    SELECT projectId, projectSize 
+    FROM project_size
+) as s
+ON td.projectId = w.projectId AND td.quarterIndex = w.quarterIndex AND td.projectId = s.projectId
+```
+```spark
+val relation4DF = sqlContext.sql("SELECT td.tenureDiversity as tenureDiversity, td.tenureDiversity*td.tenureDiversity as tenureDiversitySquared, td.quarterIndex as quarterIndex, s.projectSize as projectSize, ABS(w.withdrawal) as withdrawal FROM (SELECT projectId, quarterIndex, withdrawal FROM withdrawal1) as w INNER JOIN (SELECT projectId, quarterIndex, tenureDiversity FROM tenure_diversity1) as td INNER JOIN (SELECT projectId, projectSize FROM project_size) as s ON td.projectId = w.projectId AND td.quarterIndex = w.quarterIndex AND td.projectId = s.projectId")
+```
+```spark
+relation4DF.take(10)
+```
+```spark
+//Creating features column
+
+val assembler4 = new VectorAssembler().setInputCols(Array("tenureDiversity","tenureDiversitySquared","quarterIndex","projectSize")).setOutputCol("features")
+val relation4 = assembler4.transform(relation4DF).select("features","withdrawal")
+```
+```spark
+// Build generalize linear model
+val glr4 = new GeneralizedLinearRegression()  
+  .setFamily("gaussian")  
+  .setLink("identity")
+  .setMaxIter(3)
+  .setFeaturesCol("features")   // setting featuresn
+  .setLabelCol("withdrawal")      // setting label column 
+```
+```spark
+// Fit the model to dataset
+val model4 = glr4.fit(relation4)
+```
+```spark
+// Print the coefficients and intercept for generalized linear regression model 
+println(s"Coefficients: ${model4.coefficients}")
+println(s"Intercept: ${model4.intercept}") 
+```
+```spark
+// Summarize the model and print the indices
+val summary = model4.summary
+println(s"Coefficient Standard Errors: ${summary.coefficientStandardErrors.mkString(",")}")
+println(s"T Values: ${summary.tValues.mkString(",")}")
+println(s"P Values: ${summary.pValues.mkString(",")}")
+println(s"Dispersion: ${summary.dispersion}")
+println(s"Null Deviance: ${summary.nullDeviance}")
+println(s"Residual Degree Of Freedom Null: ${summary.residualDegreeOfFreedomNull}")
+println(s"Deviance: ${summary.deviance}")
+println(s"Residual Degree Of Freedom: ${summary.residualDegreeOfFreedom}")
+println(s"AIC: ${summary.aic}")
+println("Deviance Residuals: ")
+summary.residuals().show()
+```
+## VI. Results Interpretations
+In this part, we will interpret the results shown in the indices of generalized linear models in the last section. Then explain the validation for the relations between independent and response variables. Lastly, we will summary all conclusions.
+
+### A. Generalized Linear Model Indices
+#### a. Coefficients and Intercepts
+
+After fitting models to datasets, we can firstly print the coefficients and intercept of the model. The coefficients response to the features in the previous dataframes. Based on the coefficients and intercepts, we can write the function between two variables and analyze their relation.
+
+#### b. Indices in summary
+
+There are many indices in the summary of generalized linear mdoels. Here we introduce the meaning of them.
+- coefficientStandardErrors
+
+  It is the standard error of estimated coefficients and intercept. It is a measure of the accuracy of predictions since the regression line is the line that minimizes the sum of squared deviations of actual value and estimated value of points in datasets. Smaller standard error, more accurate line.
+  
+- tValues
+
+  It is the T-statistic of estimated coefficients and intercept. It can be calculated from estimated value divides standars error.
+  
+- pValues
+
+  It is the two-sided p-value of estimated coefficients and intercept. It is a measure in F-test to show the significance between two variables. In a same model, p value may be different for features. If p is less than 0.05, it shows a significant correlation between the feature and the response variables. Smaller p value, more significant correlation.
+  
+- dispersion
+
+  The dispersion of the fitted model. It is taken as 1.0 for the "binomial" and "poisson" families, and otherwise estimated by the sum of the squares of the Pearson residuals divided by the residual degrees of freedom.
+
+- nullDeviance
+
+  The deviance for the null model.
+
+- residualDegreeOfFreedomNull
+
+  The residual degrees of freedom for the null model.
+
+- deviance
+
+  The deviance for the fitted model. It is a goodness-of-fit statistic for a statistical model.
+
+- residualDegreeOfFreedom
+
+  The residual degrees of freedom.
+
+- aic
+
+  Akaike's "An Information Criterion"(AIC) for the fitted model. It is an estimator of the relative quality of statistical models for a given set of data.
+
+- residuals
+
+  The residuals of the fitted model.
+  
+### B. Relation between country diversity and productivity
+From the results of model1 in the last section. First the p value of features are 5.630914198191395E-4, 1.1280735147600751E-4, 0.0, 0.0. The responding features are countryDiversity, countryDiversitySquared, quarterIndex and projectSize. All of the p values are less than 0.05 showing that these four features are significantly related to the response variables.</br>
+
+Then based on the coefficients of countryDiversity and countryDiversitySquared, 2.107325036745077, 2.4063783673599235, and the intercept -45.39450935481706. We can get the function between country diversity and productivity: y = 2.41x^2 + 2.11x - 45.39. From the curve of this quadratic funtion, increased country diversity has a positive effect on productivity.</br>
+
+We can understand the positive of country diversity. Project members from different countries are likely to have different backgrounds so that they will have strengths in different areas or subjects. They are able to contribute different types of information to the project. Developing groups with members from many countries will have the advantage to solve a broader range of problems. With clear-cut assignment of responsibility, it is reasonable to increase the team productivity.
+
+### C. Relation between country diversity and member withdrawal
+
+From the results of model2 in the last section, the p value of features are 0.05691849415479311, 0.013228819580423101, 8.419026580368527E-4, 0.0. The responding features are countryDiversity, countryDiversitySquared, quarterIndex, projectSize. The p values of linear term of country diversity is larger than 0.05 showing that we can only consider the quadratic term. The controlled variables quarterIndex and projectSize also have significant correlations with the response variable.</br>
+
+Then based on the coefficients of countryDiversitySquared, 1.1911712059225146, and the intercept 0.27625428195768537. We can get the function between country diversity and withdrawal: y = 1.19x^2 + 0.28. From the curve of this quadratic funtion, increased country diversity has a negtive influence on the project which will lead more member withdrawal.</br>
+
+In part B, we have analyzed that increased country diversity will improve project productivity. However, high country diversity also companies some negtive influence in this part. It will result high member withdrawal because country diversity may trigger some conflicts and dissatisfaction among members. The differences in backgrouns and views will make people feel hard to find resonance in the group. That will deminish the team cohesiveness so the group has higher withdrawal.
+
+### D. Relation between tenure diversity and productivity
+
+From the results of model3, the p value of features are 1.6246833797306515E-4, 0.08642521659155378, 0.0, 0.024467450696646464. The responding features are quarterIndex, projectSize, tenureDiversity, tenureDiversitySquared. Only the p value of projectSize is larger than 0.05. So both the linear and quadratic terms of tenure diversity have a significant correlation with the response variable.</br>
+
+Then based on the coefficients of tenureDiversity and tenureDiversitySquared, 87.40199489129517, 0.5340709854730888, and the intercept -189.66052434068467. We can get the function between tenure diversity and productivity: y = 0.53x^2 + 87.4x - 189.66. From the curve of this quadratic funtion, increased tenure diversity has a positive influence on the project productivity.</br>
+
+One reason that increased tenure diversity can improve group productivity may be that it leads to better task distribution. Although members with long tenure do not necessarily do more work as their tenure increases, their experience keep growing over time. As a result, members with different tenure will be interested in performing different kinds of tasks. This will make the whole group keep effective in all steps and increase the number of events in quarters.
+
+### E. Relation between tenure diversity and withdrawal
+
+From the results of model4, the p value of features are 1.6886893541134818E-4, 0.0175726371006506, 0.16926126901343563, 7.508569083491956E-5 . The responding features are tenureDiversity, tenureDiversitySquared, quarterIndex, projectSize. Only the p value of quarterIndex is larger than 0.05. So both the linear and quadratic terms of tenure diversity have a significant correlation with the response variable.</br>
+
+Then based on the coefficients of tenureDiversity and tenureDiversitySquared, 0.1316244161718731, -0.0026206413201773473, and the intercept 0.9403706005232619. We can get the function between tenure diversity and member withdrawal: y = -0.0026x^2 + 0.13x + 0.94. From the curve of this quadratic funtion, at the beginning, increased tenure diversity will increase the number of withdrawal. But when the tenure diversity goes above 25, the withdrawal becomes decreasing.</br>
+
+From curve of the quadratic function, projects with moderate tenure diversity have most withdrawal number. Low tenure diversity or high tenure diversity will decrease the number of withdrawal. We can understand the results from several aspects. First, extreme low tenure diversity stands for that the project has a very fixed group members. That because the conditions or some special attributes of the project make people choose to stay so this kind of projects have low member withdrawal. Second, as tenure diversity increases, it may reduce the social integration and trigger conflicts. Online groups are less cohesive with lower member identification so when members get frustrated, they are more likely to leave. Last, if the tenure diversity keeps growing, it shows that the project has a unstable member structure. The old members may be dissatisfied with the newcommesr and the newcommers have more differences and need to communicate more with old members. These are more likely to trigger conflicts and reduce people's degree of good feeling. Thus, extreme high tenure diversity may increase member withdrawal.
+
+## VII. Conclusions and Review
+
+In this project, we mainly analyze the effects of tenure diversity and country diversity on group productivity and member withdrawal. The data source is GHTorrent datasets in google Bigquery. Firstly, select related datasets and attributes and use several filter conditions to obtain valid data. Then calculate independent and response variables, import the data to spark and build dataframes. Next, user generalized linear models to fit the datasets and get results.</br>
+
+After analysis, we can get the four conclusions:</br>
+a. Increased country diversity leads to high productivity.</br>
+b. Increased country diversity leads to high withdrawal.</br>
+c. Increased tenure diversity leads to high productivity.</br>
+d. Increased country diversity firstly leads to high withdrawal and after going above a value, it will decrease withdrawal.</br>
+
+Thus, we can see that increased diversity is a two-edged sword. It may bring benefits and shortcomings as well. When organizing developing groups, people need to find a balance and choose propriate diversity values.</br>
+
+In this project, based on two main papers I refer to, it achieves building models and analyzing the relations between diversity and group outcomes. There are some places that can be improved.</br>
+
+a. In data preparation, the whole process of data filer can be completed in Bigquery. Querying with SQL is very convenient in Bigquery. Then I can only import the last variables directly related in the project. When I finish the filter of early stage, I did not consider fully about later steps.</br>
+b. In build model section, I build the most integrated model introduced in the reference directly. It can provide more details about the null model and basic model with only controlled variables.
+
+## References
+
+[1] Chen Jilin, Ren Yuqing, Riedl John, “The Effects of Diversity on Group Productivity and Member Withdrawal in Online V olunteer Groups,” CHI: User Characteristics and Large-Scale Tracking. Atlanta, USA, 2010.</br>
+[2] Vasilescu Bogdan, Serebrenik Alexander, Filkov Vladimir, “A Data Set for Social Diversity Studies of GitHub Teams,” the 12th Working Conference on Mining Software Repositories. IEEE, 2015.</br>
+[3] Matragkas Nicholas, Williams R James, Kolovos S Dimitris, Paige F Richard, “Analysing the ‘Biodiversity’ of Open Source Ecosystems: The GitHub Case,” the 11th Working Conference on Mining Software Repositories. IEEE, 2014.</br>
+[4] Bedeian G Arthur, Mossholder W Kevin, “On the use of the coefficient of variation as a measure of diversity,” Organizational Research Methods, no. 3.3, pp. 285-297, 2000.</br>
+[5] Woltman Heather, Feldstain Andrea, MacKay Christine J, Rocchi Meredith, “An introduction to hierarchical linear modeling,” Tutorials in quantitative methods for psychology, no. 8.1, pp. 52-69, 2012.</br>
+[6] Class GeneralizedLinearRegressionTrainingSummary Document, “http://spark.apache.org/docs/preview/api/java/org/apache/spark/ml/regression/GeneralizedLinearRegressionTrainingSummary.html”.</br>
+[7] Machine Learning Library Guide, “https://spark.apache.org/docs/2.2.0/ml-guide.html”.
