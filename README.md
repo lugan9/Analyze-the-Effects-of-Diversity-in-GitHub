@@ -664,27 +664,27 @@ LIMIT 10
 #### d. Combine the members6 with commits2 and add quarterIndex to get final commits table (commits4, 124602 rows).
 
 ```sql
-// SELECT c.projectId as projectId, m6.projectCreatedAt as projectCreatedAt, c.committerId as memberId, 
-//       c.commitId as commitId, c.createdAt as commitCreatedAt
-// FROM [advance-topic-197921:commits.commits2] as c
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, projectCreatedAt
-//   FROM [advance-topic-197921:members.members6]
-// ) as m6
-// ON m6.projectId = c.projectId AND m6.memberId = c.committerId
+SELECT c.projectId as projectId, m6.projectCreatedAt as projectCreatedAt, c.committerId as memberId, 
+       c.commitId as commitId, c.createdAt as commitCreatedAt
+FROM [advance-topic-197921:commits.commits2] as c
+INNER JOIN
+ (
+   SELECT projectId, memberId, projectCreatedAt
+   FROM [advance-topic-197921:members.members6]
+ ) as m6
+ON m6.projectId = c.projectId AND m6.memberId = c.committerId
 ```
 ```sql
 --Add quarterIndex
-//
-// SELECT projectId, projectCreatedAt, memberId, commitId as eventId, commitCreatedAt as eventCreatedAt,
-//       FLOOR(DATEDIFF(commitCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
-// FROM [advance-topic-197921:commits.commits3]
+
+SELECT projectId, projectCreatedAt, memberId, commitId as eventId, commitCreatedAt as eventCreatedAt,
+       FLOOR(DATEDIFF(commitCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+FROM [advance-topic-197921:commits.commits3]
 ```
-```sql
-// df = pd.read_gbq('select * from commits.commits4', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('commits4.csv', index = False, encoding = 'utf-8')
+```python
+df = pd.read_gbq('select * from commits.commits4', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('commits4.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val commits4DataURL = "https://drive.google.com/uc?export=download&id=1_yTzzMH8unq0uzs9bnNsIA9yfptDGNjN"
@@ -744,25 +744,25 @@ LIMIT 10
 #### e. Combine the members6 with commit_comments1 and add quarterIndex to get final new commit_comments table (commit_comments3, 2967 rows).
 
 ```sql
-// SELECT  cc. projectId as projectId, m6.projectCreatedAt as projectCreatedAt, cc. memberId as memberId, 
-//         cc. commitCommentId as commitCommentId, cc. createdAt as commitCommentCreatedAt
-// FROM [advance-topic-197921:commit_comments.commit_comments1] as cc
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, projectCreatedAt
-//   FROM [advance-topic-197921:members.members6]
-// ) as m6
-// ON m6.projectId = cc.projectId AND m6.memberId = cc.memberId
+SELECT  cc. projectId as projectId, m6.projectCreatedAt as projectCreatedAt, cc. memberId as memberId, 
+        cc. commitCommentId as commitCommentId, cc. createdAt as commitCommentCreatedAt
+FROM [advance-topic-197921:commit_comments.commit_comments1] as cc
+INNER JOIN
+(
+  SELECT projectId, memberId, projectCreatedAt
+  FROM [advance-topic-197921:members.members6]
+) as m6
+ON m6.projectId = cc.projectId AND m6.memberId = cc.memberId
 ```
 ```sql
-// SELECT projectId, projectCreatedAt, memberId, commitCommentId as eventId, commitCommentCreatedAt as eventCreatedAt,
-//       FLOOR(DATEDIFF(commitCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
-// FROM [advance-topic-197921:commit_comments.commit_comments2]
+SELECT projectId, projectCreatedAt, memberId, commitCommentId as eventId, commitCommentCreatedAt as eventCreatedAt,
+      FLOOR(DATEDIFF(commitCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+FROM [advance-topic-197921:commit_comments.commit_comments2]
 ```
 ```python
-// df = pd.read_gbq('select * from commit_comments.commit_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('commit_comments3.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from commit_comments.commit_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                 private_key='', dialect='legacy')
+df.to_csv('commit_comments3.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val commit_comments3DataURL = "https://drive.google.com/uc?export=download&id=1NSj3kLoVgvUXFQl3pTLgkPit0vHbmbkz"
@@ -821,25 +821,25 @@ LIMIT 10
 #### f. Combine the members6 with issues1 and add quarterIndex to get final new issues table (issues3, 138931 rows).
 
 ```sql
-// SELECT i.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, i.actorId as memberId,
-//       i.issueId as issueId, i.issueEventId as issueEventId, i.createdAt as issueEventCreatedAt
-// FROM [advance-topic-197921:issues.issues1] as i
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, projectCreatedAt
-//   FROM [advance-topic-197921:members.members6]
-// ) as m6
-// ON m6.projectId = i.repoId AND m6.memberId = i.actorId
+SELECT i.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, i.actorId as memberId,
+      i.issueId as issueId, i.issueEventId as issueEventId, i.createdAt as issueEventCreatedAt
+FROM [advance-topic-197921:issues.issues1] as i
+INNER JOIN
+(
+  SELECT projectId, memberId, projectCreatedAt
+  FROM [advance-topic-197921:members.members6]
+) as m6
+ON m6.projectId = i.repoId AND m6.memberId = i.actorId
 ```
 ```sql
-// SELECT projectId, projectCreatedAt, memberId, issueEventId as eventId, issueEventCreatedAt as eventCreatedAt,
-//       FLOOR(DATEDIFF(issueEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
-// FROM [advance-topic-197921:issues.issues2]
+SELECT projectId, projectCreatedAt, memberId, issueEventId as eventId, issueEventCreatedAt as eventCreatedAt,
+      FLOOR(DATEDIFF(issueEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+FROM [advance-topic-197921:issues.issues2]
 ```
 ```python
-// df = pd.read_gbq('select * from issues.issues3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('issues3.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from issues.issues3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('issues3.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val issues3DataURL = "https://drive.google.com/uc?export=download&id=1XVfLV57Vnb96MrdoIDR5CeBuptGtYG7k"
@@ -898,25 +898,25 @@ ORDER BY projectId
 #### g. Combine the members6 with issue_comments1 and add quarterIndex to get final issue_comments table (issue_comments3, 164356 rows).
 
 ```sql
-// SELECT ic.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, ic.userId as memberId,
-//       ic.issueId as issueId, ic.issueCommentId as issueCommentId, ic.issueCommentCreatedAt as issueCommentCreatedAt
-// FROM [advance-topic-197921:issue_comments.issue_comments1] as ic
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, projectCreatedAt
-//   FROM [advance-topic-197921:members.members6]
-// ) as m6
-// ON m6.projectId = ic.repoId AND m6.memberId = ic.userId
+SELECT ic.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, ic.userId as memberId,
+      ic.issueId as issueId, ic.issueCommentId as issueCommentId, ic.issueCommentCreatedAt as issueCommentCreatedAt
+FROM [advance-topic-197921:issue_comments.issue_comments1] as ic
+INNER JOIN
+(
+  SELECT projectId, memberId, projectCreatedAt
+  FROM [advance-topic-197921:members.members6]
+) as m6
+ON m6.projectId = ic.repoId AND m6.memberId = ic.userId
 ```
 ```sql
-// SELECT projectId, projectCreatedAt, memberId, issueCommentId as eventId, issueCommentCreatedAt as eventCreatedAt,
-//       FLOOR(DATEDIFF(issueCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
-// FROM [advance-topic-197921:issue_comments.issue_comments2]
+SELECT projectId, projectCreatedAt, memberId, issueCommentId as eventId, issueCommentCreatedAt as eventCreatedAt,
+       FLOOR(DATEDIFF(issueCommentCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+ FROM [advance-topic-197921:issue_comments.issue_comments2]
 ```
 ```python
-// df = pd.read_gbq('select * from issue_comments.issue_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('issue_comments3.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from issue_comments.issue_comments3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('issue_comments3.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val issue_comments3DataURL = "https://drive.google.com/uc?export=download&id=1b50pPonVv7mS-CpjJMW4qgDg_DLejh5y"
@@ -976,25 +976,25 @@ LIMIT 10
 #### h. Combine the members6 with pull_requests1 and add quarterIndex to get final pull_requests table (pull_requests3, 87036 rows).
 
 ```sql
-// SELECT  pr.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, pr.eventActorId as memberId,
-//         pr.pullRequestId as pullRequestId, pr.pullRequestEventId as pullRequestEventId, pr.eventCreatedAt as pullreqEventCreatedAt
-// FROM [advance-topic-197921:pull_requests.pull_requests1] as pr
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, projectCreatedAt
-//   FROM [advance-topic-197921:members.members6]
-// ) as m6
-// ON m6.projectId = pr.repoId AND m6.memberId = pr.eventActorId
+SELECT  pr.repoId as projectId, m6.projectCreatedAt as projectCreatedAt, pr.eventActorId as memberId,
+        pr.pullRequestId as pullRequestId, pr.pullRequestEventId as pullRequestEventId, pr.eventCreatedAt as pullreqEventCreatedAt
+FROM [advance-topic-197921:pull_requests.pull_requests1] as pr
+INNER JOIN
+(
+  SELECT projectId, memberId, projectCreatedAt
+  FROM [advance-topic-197921:members.members6]
+) as m6
+ON m6.projectId = pr.repoId AND m6.memberId = pr.eventActorId
 ```
 ```sql
-// SELECT projectId, projectCreatedAt, memberId, pullRequestEventId as eventId, pullreqEventCreatedAt as eventCreatedAt,
-//       FLOOR(DATEDIFF(pullreqEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
-// FROM [advance-topic-197921:pull_requests.pull_requests2]
+SELECT projectId, projectCreatedAt, memberId, pullRequestEventId as eventId, pullreqEventCreatedAt as eventCreatedAt,
+      FLOOR(DATEDIFF(pullreqEventCreatedAt, projectCreatedAt)/90 + 1) as quarterIndex
+FROM [advance-topic-197921:pull_requests.pull_requests2]
 ```
 ```python
-// df = pd.read_gbq('select * from pull_requests.pull_requests3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('pull_requests3.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from pull_requests.pull_requests3', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('pull_requests3.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val pull_requests3DataURL = "https://drive.google.com/uc?export=download&id=1ruMygaMy2myp5FIB7Yzg2_CpbzwVOpI_"
@@ -1056,17 +1056,17 @@ LIMIT 10
 We have union the column names of all kinds of event table. So we can combine them all in a large table for calculating independent and response variables in the project.
 
 ```sql
-// SELECT projectId, projectCreatedAt, memberId, eventId, eventCreatedId, quarterIndex
-// FROM [advance-topic-197921:commits.commits4],
-//      [advance-topic-197921:commit_comments.commit_comments3],
-//      [advance-topic-197921:issues.issues3],
-//      [advance-topic-197921:issue_comments.issue_comments3],
-//      [advance-topic-197921:pull_requests.pull_requests3]
+SELECT projectId, projectCreatedAt, memberId, eventId, eventCreatedId, quarterIndex
+FROM [advance-topic-197921:commits.commits4],
+     [advance-topic-197921:commit_comments.commit_comments3],
+     [advance-topic-197921:issues.issues3],
+     [advance-topic-197921:issue_comments.issue_comments3],
+     [advance-topic-197921:pull_requests.pull_requests3]
 ```
 ```python
-// df = pd.read_gbq('select * from project_events.project_events2', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('project_events2.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from project_events.project_events2', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('project_events2.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val project_events2DataURL = "https://drive.google.com/uc?export=download&id=1HhGWOTlP4PC8wOKGvEJ2e-lWpH1EN8jT"
@@ -1131,35 +1131,35 @@ Based on definitions of country diversity, tenure diversity, project productivit
 ```sql
 // (1) Calculate memberCount of each country
 //
-// SELECT projectId, COUNT(memberId) as memberCount, countryCode
-// FROM [advance-topic-197921:members.members6]
-// GROUP BY projectId, countryCode
-// HAVING countryCode IS NOT NULL
-// ORDER BY projectId
+SELECT projectId, COUNT(memberId) as memberCount, countryCode
+FROM [advance-topic-197921:members.members6]
+GROUP BY projectId, countryCode
+HAVING countryCode IS NOT NULL
+ORDER BY projectId
 
 // (2) Calculate the percent of members in each country.
 //
-// SELECT mc.projectId as projectId, memberCount/m6.memberSum as countryPercent, countryCode
-// FROM [advance-topic-197921:country_diversity.memberCount_country] as mc
-// INNER JOIN
-// (
-//   SELECT projectId, COUNT(memberId) as memberSum
-//   FROM [advance-topic-197921:members.members6]
-//   GROUP BY projectId
-// ) as m6
-// ON m6.projectId = mc.projectId
-// ORDER BY mc.projectId
+SELECT mc.projectId as projectId, memberCount/m6.memberSum as countryPercent, countryCode
+FROM [advance-topic-197921:country_diversity.memberCount_country] as mc
+INNER JOIN
+(
+  SELECT projectId, COUNT(memberId) as memberSum
+  FROM [advance-topic-197921:members.members6]
+  GROUP BY projectId
+) as m6
+ON m6.projectId = mc.projectId
+ORDER BY mc.projectId
 
 // (3) Calculate country diversity
 //
-// SELECT projectId, round(1 - SUM(countryPercent*countryPercent), 3) as countryDiversity
-// FROM [advance-topic-197921:country_diversity.countryPercent]
-// GROUP BY projectId
+SELECT projectId, round(1 - SUM(countryPercent*countryPercent), 3) as countryDiversity
+FROM [advance-topic-197921:country_diversity.countryPercent]
+GROUP BY projectId
 ```
 ```python
-// df = pd.read_gbq('select * from country_diversity.countryDiversity', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('countryDiversity.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from country_diversity.countryDiversity', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('countryDiversity.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val countryDiversityDataURL = "https://drive.google.com/uc?export=download&id=1AtaoE7plUr5rL0YsSsdCUWuMobiBLpP1"
@@ -1211,16 +1211,16 @@ LIMIT 10
 #### b. Productivity (productivity1 1673 rows)
 
 ```sql
-// SELECT projectId, quarterIndex, COUNT(eventId) as eventNumInQuarter
-// FROM [advance-topic-197921:project_events.project_events2]
-// GROUP BY projectId, quarterIndex
-// HAVING quarterIndex > 0
-// ORDER BY projectId, quarterIndex
+SELECT projectId, quarterIndex, COUNT(eventId) as eventNumInQuarter
+FROM [advance-topic-197921:project_events.project_events2]
+GROUP BY projectId, quarterIndex
+HAVING quarterIndex > 0
+ORDER BY projectId, quarterIndex
 ```
 ```python
-// df = pd.read_gbq('select * from productivity.productivity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('productivity1.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from productivity.productivity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('productivity1.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val productivity1DataURL = "https://drive.google.com/uc?export=download&id=1-XnGTKc7KAHf2Di7jJkn3mRgjE7FOrOf"
@@ -1275,28 +1275,28 @@ LIMIT 10
 ```sql
 // (1) The number of members who have activities in each quarter
 
-// SELECT projectId, quarterIndex, COUNT(DISTINCT(memberId)) as memberNumInQuarter
-// FROM [advance-topic-197921:project_events.project_events2]
-// GROUP BY projectId, quarterIndex
-// ORDER BY projectId, quarterIndex
+SELECT projectId, quarterIndex, COUNT(DISTINCT(memberId)) as memberNumInQuarter
+FROM [advance-topic-197921:project_events.project_events2]
+GROUP BY projectId, quarterIndex
+ORDER BY projectId, quarterIndex
 
 // (2) Calculate withdrawal
 //
-// SELECT q.projectId as projectId, q.quarterIndex + 1 as quarterIndex, (q1.memberNumInQuarter - q.memberNumInQuarter) as withdrawal
-// FROM [advance-topic-197921:withdrawal.memberNumInQuarter] as q
-// INNER JOIN
-// (
-//   SELECT projectId, (quarterIndex -1) as quarterIndex, memberNumInQuarter
-//   FROM [advance-topic-197921:withdrawal.memberNumInQuarter]
-//   having quarterIndex > 0
-// ) as q1
-// ON q.projectId = q1.projectId AND q.quarterIndex = q1.quarterIndex
-// ORDER BY q.projectId, q.quarterIndex
+SELECT q.projectId as projectId, q.quarterIndex + 1 as quarterIndex, (q1.memberNumInQuarter - q.memberNumInQuarter) as withdrawal
+FROM [advance-topic-197921:withdrawal.memberNumInQuarter] as q
+INNER JOIN
+(
+  SELECT projectId, (quarterIndex -1) as quarterIndex, memberNumInQuarter
+  FROM [advance-topic-197921:withdrawal.memberNumInQuarter]
+  having quarterIndex > 0
+) as q1
+ON q.projectId = q1.projectId AND q.quarterIndex = q1.quarterIndex
+ORDER BY q.projectId, q.quarterIndex
 ```
 ```python
-// df = pd.read_gbq('select * from withdrawal.withdrawal1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('withdrawal1.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from withdrawal.withdrawal1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('withdrawal1.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val withdrawal1DataURL = "https://drive.google.com/uc?export=download&id=1Wyp0TVFdfRH7F5B19Qg71MYmrX0EGvkQ"
@@ -1351,56 +1351,56 @@ LIMIT 30
 ```sql
 // (1) The first event of each member in each quarter.
 // 
-// SELECT e.projectId as projectId, e.projectCreatedAt as projectCreatedAt, e.memberId as memberId, 
-//       e.eventId as eventId, e.eventCreatedAt as memberFirstEvent, e.quarterIndex as quarterIndex
-// FROM [advance-topic-197921:project_events.project_events2] as e
-// INNER JOIN
-// (
-//   SELECT projectId, memberId, min(eventCreatedAt) as memberFirstEvent
-//   FROM [advance-topic-197921:project_events.project_events2]
-//   GROUP BY projectId, memberId
-// ) as e2
-// ON e.projectId = e2.projectId AND e.memberId = e2.memberId AND e2.memberFirstEvent = e.eventCreatedAt
-// HAVING quarterIndex > 0
-// ORDER BY projectId, memberId
+SELECT e.projectId as projectId, e.projectCreatedAt as projectCreatedAt, e.memberId as memberId, 
+      e.eventId as eventId, e.eventCreatedAt as memberFirstEvent, e.quarterIndex as quarterIndex
+FROM [advance-topic-197921:project_events.project_events2] as e
+INNER JOIN
+(
+  SELECT projectId, memberId, min(eventCreatedAt) as memberFirstEvent
+  FROM [advance-topic-197921:project_events.project_events2]
+  GROUP BY projectId, memberId
+) as e2
+ON e.projectId = e2.projectId AND e.memberId = e2.memberId AND e2.memberFirstEvent = e.eventCreatedAt
+HAVING quarterIndex > 0
+ORDER BY projectId, memberId
 
 // (2) Calculate member tenure
 //
-// SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId,
-//       DATEDIFF(DATE_ADD(projectCreatedAt, 90*quarterIndex, 'DAY'), memberFirstEvent) as tenure
-// FROM [advance-topic-197921:tenure_diversity.memberFirstEvent]
-// ORDER BY projectId, memberId
+SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId,
+      DATEDIFF(DATE_ADD(projectCreatedAt, 90*quarterIndex, 'DAY'), memberFirstEvent) as tenure
+FROM [advance-topic-197921:tenure_diversity.memberFirstEvent]
+ORDER BY projectId, memberId
 
 // (3) Calculate tenure diversity
 //
-// SELECT projectId, projectCreatedAt, quarterIndex, 
-//       ROUND(SQRT(SUM((tenure - meanTure)*(tenure - meanTure))/COUNT(memberId)), 1) as tenureDiversity
-// FROM
-// (
-// SELECT t.projectId as projectId, t.projectCreatedAt as projectCreatedAt, t.memberId as memberId,
-//       t.quarterIndex as quarterIndex, t.memberFirstEvent as memberFirstEvent, t.eventId as eventId,
-//       t.tenure as tenure, mt.meanTenure as meanTure
-// FROM
-// (
-// SELECT projectId, projectCreatedAt, quarterIndex, AVG(tenure) as meanTenure
-// FROM [advance-topic-197921:tenure_diversity.memberTenure]
-// GROUP BY projectId, projectCreatedAt, quarterIndex
-// ORDER BY projectId
-// ) as mt
-// INNER JOIN
-// (
-//   SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId, tenure
-//   FROM [advance-topic-197921:tenure_diversity.memberTenure]
-// ) as t
-// ON t.projectId = mt.projectId AND t.quarterIndex = mt.quarterIndex
-// )
-// GROUP BY projectId, projectCreatedAt, quarterIndex
-// ORDER BY projectId, quarterIndex
+SELECT projectId, projectCreatedAt, quarterIndex, 
+       ROUND(SQRT(SUM((tenure - meanTure)*(tenure - meanTure))/COUNT(memberId)), 1) as tenureDiversity
+FROM
+(
+SELECT t.projectId as projectId, t.projectCreatedAt as projectCreatedAt, t.memberId as memberId,
+      t.quarterIndex as quarterIndex, t.memberFirstEvent as memberFirstEvent, t.eventId as eventId,
+      t.tenure as tenure, mt.meanTenure as meanTure
+FROM
+(
+SELECT projectId, projectCreatedAt, quarterIndex, AVG(tenure) as meanTenure
+FROM [advance-topic-197921:tenure_diversity.memberTenure]
+GROUP BY projectId, projectCreatedAt, quarterIndex
+ORDER BY projectId
+) as mt
+INNER JOIN
+(
+  SELECT projectId, projectCreatedAt, memberId, quarterIndex, memberFirstEvent, eventId, tenure
+  FROM [advance-topic-197921:tenure_diversity.memberTenure]
+) as t
+ON t.projectId = mt.projectId AND t.quarterIndex = mt.quarterIndex
+)
+GROUP BY projectId, projectCreatedAt, quarterIndex
+ORDER BY projectId, quarterIndex
 ```
 ```python
-// df = pd.read_gbq('select * from tenure_diversity.tenure_diversity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
-//                 private_key='', dialect='legacy')
-// df.to_csv('tenure_diversity1.csv', index = False, encoding = 'utf-8')
+df = pd.read_gbq('select * from tenure_diversity.tenure_diversity1', project_id='advance-topic-197921', index_col=None, col_order=None, reauth=False, verbose=True, 
+                private_key='', dialect='legacy')
+df.to_csv('tenure_diversity1.csv', index = False, encoding = 'utf-8')
 ```
 ```spark
 val tenure_diversity1DataURL = "https://drive.google.com/uc?export=download&id=1GlL90mKDM2UI_UudRn2WUhKJez8N7eKR"
